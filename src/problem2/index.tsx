@@ -4,6 +4,7 @@ import axios from "axios";
 import { useForm, SubmitHandler } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import Select from "react-select";
 import "./CurrencySwapForm.css";
 
 type PriceData = {
@@ -22,14 +23,31 @@ const schema = z.object({
     )
     .transform((val) => parseFloat(val))
     .refine((val) => val > 0, "Amount must be greater than 0"),
-  fromToken: z.string().min(1, "Please select a token to swap from"),
-  toToken: z.string().min(1, "Please select a token to swap to"),
+  fromToken: z
+    .string({
+      errorMap: () => {
+        return { message: "Please select a token to swap from" };
+      },
+    })
+    .min(1),
+  toToken: z
+    .string({
+      errorMap: () => {
+        return { message: "Please select a token to swap to" };
+      },
+    })
+    .min(1),
 });
 
 type FormData = z.infer<typeof schema>;
 
+type Option = {
+  value: string;
+  label: JSX.Element;
+};
+
 const CurrencySwapForm: React.FC = () => {
-  const [tokens, setTokens] = useState<string[]>([]);
+  const [tokens, setTokens] = useState<Option[]>([]);
   const [prices, setPrices] = useState<Prices>({});
   const [result, setResult] = useState<number>(0);
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -37,6 +55,8 @@ const CurrencySwapForm: React.FC = () => {
   const {
     register,
     handleSubmit,
+    setValue,
+    trigger,
     formState: { errors },
   } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -48,11 +68,25 @@ const CurrencySwapForm: React.FC = () => {
       .then((response) => {
         const data: PriceData[] = response.data;
         const priceMap: Prices = {};
-        const availableTokens: string[] = [];
+        const availableTokens: Option[] = data.map(({ currency }) => {
+          const iconUrl = `https://raw.githubusercontent.com/Switcheo/token-icons/main/tokens/${currency}.svg`;
+          return {
+            value: currency,
+            label: (
+              <div style={{ display: "flex", alignItems: "center" }}>
+                <img
+                  src={iconUrl}
+                  alt={currency}
+                  style={{ width: 20, height: 20, marginRight: 8 }}
+                />
+                {currency}
+              </div>
+            ),
+          };
+        });
 
         data.forEach(({ currency, price }) => {
           priceMap[currency] = price;
-          availableTokens.push(currency);
         });
 
         setTokens(availableTokens);
@@ -99,25 +133,41 @@ const CurrencySwapForm: React.FC = () => {
       {errors.amount && <p className="error">{errors.amount.message}</p>}
 
       <label htmlFor="fromToken">From:</label>
-      <select id="fromToken" {...register("fromToken")}>
-        <option value="">Select Token</option>
-        {tokens.map((token) => (
-          <option key={token} value={token}>
-            {token}
-          </option>
-        ))}
-      </select>
+      <Select
+        options={tokens}
+        onChange={(option) => {
+          setValue("fromToken", option?.value || "");
+          trigger("fromToken");
+        }}
+        instanceId="fromToken"
+        placeholder="Select Token"
+        styles={{
+          control: (baseStyles) => ({
+            ...baseStyles,
+            marginBottom: "20px",
+            textAlign: "left",
+          }),
+        }}
+      />
       {errors.fromToken && <p className="error">{errors.fromToken.message}</p>}
 
       <label htmlFor="toToken">To:</label>
-      <select id="toToken" {...register("toToken")}>
-        <option value="">Select Token</option>
-        {tokens.map((token) => (
-          <option key={token} value={token}>
-            {token}
-          </option>
-        ))}
-      </select>
+      <Select
+        options={tokens}
+        onChange={(option) => {
+          setValue("toToken", option?.value || "");
+          trigger("toToken");
+        }}
+        instanceId="toToken"
+        placeholder="Select Token"
+        styles={{
+          control: (baseStyles) => ({
+            ...baseStyles,
+            marginBottom: "20px",
+            textAlign: "left",
+          }),
+        }}
+      />
       {errors.toToken && <p className="error">{errors.toToken.message}</p>}
 
       <label htmlFor="output-amount">Amount to receive</label>
