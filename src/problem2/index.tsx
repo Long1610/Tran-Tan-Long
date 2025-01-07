@@ -5,6 +5,7 @@ import { useForm, SubmitHandler } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Select from "react-select";
+import { Slide, ToastContainer, toast } from "react-toastify";
 import "./CurrencySwapForm.css";
 
 type PriceData = {
@@ -99,7 +100,10 @@ const CurrencySwapForm: React.FC = () => {
     const { amount, fromToken, toToken } = data;
 
     if (fromToken === toToken) {
-      alert("Cannot swap the same token.");
+      toast.error("Cannot swap the same token.", {
+        position: "top-center",
+        transition: Slide,
+      });
       return;
     }
 
@@ -115,73 +119,82 @@ const CurrencySwapForm: React.FC = () => {
         setIsLoading(false);
       }, 1500);
     } else {
-      alert("Invalid token prices.");
+      toast.error("Invalid token prices.", {
+        position: "top-center",
+        transition: Slide,
+      });
     }
   };
 
   return (
-    <form className="currency-swap-form" onSubmit={handleSubmit(onSubmit)}>
-      <h5>Swap</h5>
+    <>
+      <form className="currency-swap-form" onSubmit={handleSubmit(onSubmit)}>
+        <h5>Swap</h5>
 
-      <label htmlFor="input-amount">Amount to send</label>
-      <input
-        id="input-amount"
-        type="number"
-        placeholder="Enter amount"
-        {...register("amount")}
-      />
-      {errors.amount && <p className="error">{errors.amount.message}</p>}
+        <label htmlFor="input-amount">Amount to send</label>
+        <input
+          id="input-amount"
+          type="number"
+          placeholder="Enter amount"
+          {...register("amount")}
+          style={{ marginBottom: errors.amount ? "0px" : "20px" }}
+        />
+        {errors.amount && <p className="error">{errors.amount.message}</p>}
 
-      <label htmlFor="fromToken">From:</label>
-      <Select
-        options={tokens}
-        onChange={(option) => {
-          setValue("fromToken", option?.value || "");
-          trigger("fromToken");
-        }}
-        instanceId="fromToken"
-        placeholder="Select Token"
-        styles={{
-          control: (baseStyles) => ({
-            ...baseStyles,
-            marginBottom: "20px",
-            textAlign: "left",
-          }),
-        }}
-      />
-      {errors.fromToken && <p className="error">{errors.fromToken.message}</p>}
+        <label htmlFor="fromToken">From:</label>
+        <Select
+          options={tokens}
+          onChange={(option) => {
+            setValue("fromToken", option?.value || "");
+            trigger("fromToken");
+          }}
+          instanceId="fromToken"
+          placeholder="Select Token"
+          styles={{
+            control: (baseStyles) => ({
+              ...baseStyles,
+              marginBottom: errors.fromToken ? "0px" : "20px",
+              textAlign: "left",
+            }),
+          }}
+        />
+        {errors.fromToken && (
+          <p className="error">{errors.fromToken.message}</p>
+        )}
 
-      <label htmlFor="toToken">To:</label>
-      <Select
-        options={tokens}
-        onChange={(option) => {
-          setValue("toToken", option?.value || "");
-          trigger("toToken");
-        }}
-        instanceId="toToken"
-        placeholder="Select Token"
-        styles={{
-          control: (baseStyles) => ({
-            ...baseStyles,
-            marginBottom: "20px",
-            textAlign: "left",
-          }),
-        }}
-      />
-      {errors.toToken && <p className="error">{errors.toToken.message}</p>}
+        <label htmlFor="toToken">To:</label>
+        <Select
+          options={tokens}
+          onChange={(option) => {
+            setValue("toToken", option?.value || "");
+            trigger("toToken");
+          }}
+          instanceId="toToken"
+          placeholder="Select Token"
+          styles={{
+            control: (baseStyles) => ({
+              ...baseStyles,
+              marginBottom: errors.toToken ? "0px" : "20px",
+              textAlign: "left",
+            }),
+          }}
+        />
+        {errors.toToken && <p className="error">{errors.toToken.message}</p>}
 
-      <label htmlFor="output-amount">Amount to receive</label>
-      <input
-        id="output-amount"
-        type="text"
-        value={result > 0 ? result.toFixed(6) : ""}
-        readOnly
-      />
+        <label htmlFor="output-amount">Amount to receive</label>
+        <input
+          id="output-amount"
+          type="text"
+          value={result > 0 ? result.toFixed(6) : ""}
+          readOnly
+        />
 
-      <button type="submit" disabled={isLoading}>
-        {isLoading ? "Processing..." : "CONFIRM SWAP"}
-      </button>
-    </form>
+        <button type="submit" disabled={isLoading}>
+          {isLoading ? "Processing..." : "CONFIRM SWAP"}
+        </button>
+      </form>
+      <ToastContainer />
+    </>
   );
 };
 
